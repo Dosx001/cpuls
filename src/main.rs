@@ -1,3 +1,8 @@
+extern crate cpuid;
+
 fn main() {
-    println!("Hello, world!");
+    match cpuid::clock_frequency() {
+        Some(frequency) => println!("CPU speed: {} MHz", frequency),
+        None => println!("Couldn't get CPU speed."),
+    };
 }
