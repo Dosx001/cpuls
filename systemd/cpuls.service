@@ -1,0 +1,8 @@
+[Unit]
+Description=CPU Log Service
+
+[Service]
+ExecStart=/home/dosx/repos/cli/cpuls/target/debug/cpuls
+
+[Install]
+WantedBy=multi-user.target
