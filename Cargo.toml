@@ -7,3 +7,5 @@ edition = "2021"
 
 [dependencies]
 cpuid = "0.1.1"
+log = "0.4.19"
+syslog = "6.1.0"
