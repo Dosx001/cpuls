@@ -1,4 +1,4 @@
-use log::{error, info};
+use log::{debug, error, info, warn};
 use std::io::Read;
 use std::net::{TcpListener, TcpStream};
 use std::thread::spawn;
@@ -39,8 +39,39 @@ fn handle_client(mut stream: TcpStream) {
                 break;
             }
             Ok(bytes_read) => {
-                let msg = String::from_utf8_lossy(&buffer[0..bytes_read]);
-                info!("Received message: {}", msg);
+                let msg = String::from_utf8_lossy(&buffer[0..bytes_read]).to_string();
+                match msg.trim() {
+                    "info" => match cpuid::identify() {
+                        Ok(info) => {
+                            info!("Brand: {}", info.brand);
+                            info!("Vendor: {}", info.vendor);
+                            info!("Codename: {}", info.codename);
+                        }
+                        Err(e) => error!("Error getting brand: {:?}", e),
+                    },
+                    "clock" => match cpuid::clock_frequency() {
+                        Some(frequency) => {
+                            if 3800 < frequency {
+                                error!("CPU frequency is too high: {}", frequency);
+                            } else if 3000 < frequency {
+                                warn!("CPU frequency is high: {}", frequency);
+                            } else {
+                                info!("CPU frequency: {}", frequency);
+                            }
+                        }
+                        None => error!("Failed to get CPU speed"),
+                    },
+                    "error" => debug!("{}", cpuid::error()),
+                    "present" => {
+                        if cpuid::is_present() {
+                            info!("CPU is present");
+                        } else {
+                            error!("CPU is not present");
+                        }
+                    }
+                    "version" => info!("Version: {}", cpuid::version()),
+                    _ => error!("Unknown message: {}", msg),
+                }
             }
             Err(err) => {
                 error!("Error reading message: {:?}", err);
