@@ -3,6 +3,7 @@ Description=CPU Log Service
 
 [Service]
 ExecStart=/home/dosx/repos/cli/cpuls/target/debug/cpuls
+StandardInput=socket
 
 [Install]
 WantedBy=multi-user.target

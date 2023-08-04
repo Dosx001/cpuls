@@ -1,7 +1,5 @@
 use log::{debug, error, info, warn};
-use std::io::Read;
-use std::net::{TcpListener, TcpStream};
-use std::thread::spawn;
+use std::io::{self, Read};
 
 fn main() {
     let _ = log::set_boxed_logger(Box::new(syslog::BasicLogger::new(
@@ -19,28 +17,12 @@ fn main() {
         },
     )))
     .map(|()| log::set_max_level(log::LevelFilter::Trace));
-    for stream in TcpListener::bind("127.0.0.1:4444").unwrap().incoming() {
-        match stream {
-            Ok(stream) => {
-                spawn(|| handle_client(stream));
-            }
-            Err(err) => {
-                error!("Error accepting incoming connection: {:?}", err);
-            }
-        }
-    }
-}
-
-fn handle_client(mut stream: TcpStream) {
-    let mut buffer = [0u8; 1024];
+    let mut buffer = [0; 512];
     loop {
-        match stream.read(&mut buffer) {
-            Ok(0) => {
-                break;
-            }
-            Ok(bytes_read) => {
-                let msg = String::from_utf8_lossy(&buffer[0..bytes_read]).to_string();
-                match msg.trim() {
+        let bytes_read = io::stdin().read(&mut buffer);
+        match bytes_read {
+            Ok(bytes_read) => match std::str::from_utf8(&buffer[0..bytes_read]) {
+                Ok(request_str) => match request_str.trim() {
                     "info" => match cpuid::identify() {
                         Ok(info) => {
                             info!("Brand: {}", info.brand);
@@ -70,12 +52,12 @@ fn handle_client(mut stream: TcpStream) {
                         }
                     }
                     "version" => info!("Version: {}", cpuid::version()),
-                    _ => error!("Unknown message: {}", msg),
-                }
-            }
-            Err(err) => {
-                error!("Error reading message: {:?}", err);
-                break;
+                    _ => error!("Unknown message: {}", request_str),
+                },
+                Err(e) => error!("Error reading from stdin: {:?}", e),
+            },
+            Err(e) => {
+                error!("Error reading from stdin: {:?}", e);
             }
         }
     }
